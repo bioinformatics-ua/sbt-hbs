@@ -100,7 +100,7 @@
                 var source = new SourceNode();
                 if (!options.simple) {
                     if (options.amd) {
-                        source.add('define([\'' + options.handlebarPath + 'handlebars.runtime\'], function(Handlebars) {\n  Handlebars = Handlebars["default"];');
+                        // source.add('define([\'' + options.handlebarPath + 'handlebars.runtime\'], function(Handlebars) {\n  Handlebars = Handlebars["default"];');
                     } else if (options.commonjs) {
                         source.add('var Handlebars = require("' + options.commonjs + '");');
                     } else {
@@ -115,7 +115,9 @@
                     //}
                     //source.add('{};\n');
 
-                    source.add('var template = Handlebars.template, templates = window.JST = window.JST || {};');
+                    if (!options.amd) {
+                        source.add('var template = Handlebars.template, templates = window.JST = window.JST || {};\n');
+                    }
                 }
 
                 var precompiled = Handlebars.precompile(data, o);
@@ -128,14 +130,14 @@
                 if (options.simple) {
                     source.add([precompiled, '\n']);
                 } else if (partial) {
-                    if (options.amd) {
-                        source.add('return ');
-                    }
+                    // if (options.amd) {
+                    //     source.add('return ');
+                    // }
                     source.add(['Handlebars.partials[\'', template, '\'] = template(', precompiled, ');\n']);
                 } else {
-                    if (options.amd) {
-                        source.add('return ');
-                    }
+                    // if (options.amd) {
+                    //     source.add('return ');
+                    // }
                     source.add(['templates[\'', template, '\'] = template(', precompiled, ');\n']);
                 }
 
@@ -143,7 +145,8 @@
 
                 if (!options.simple) {
                     if (options.amd) {
-                        source.add('});');
+                        // source.add('return templates;');
+                        // source.add('});');
                     } else if (!options.commonjs) {
                         source.add('})();');
                     }

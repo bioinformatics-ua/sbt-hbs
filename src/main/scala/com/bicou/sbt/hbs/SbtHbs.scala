@@ -1,15 +1,21 @@
 package com.bicou.sbt.hbs
 
-import sbt._
-import sbt.Keys._
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths, StandardOpenOption}
+
+import com.bicou.sbt.hbs.Import.HbsKeys
+import com.typesafe.sbt.jse.SbtJsTask
 import com.typesafe.sbt.web._
-import com.typesafe.sbt.jse.{SbtJsEngine, SbtJsTask}
+import sbt.Keys._
+import sbt._
 import spray.json._
 
 object Import {
 
   object HbsKeys {
     val hbs = TaskKey[Seq[File]]("hbs", "Precompile handlebar templates.")
+    val remfile = TaskKey[Unit]("remfile", "Removes old generated file")
+    val finishfile = TaskKey[Unit]("finishfile", "Finishes generated file")
 
     val amd = SettingKey[Boolean]("hbs-amd", "Exports amd style (require.js)")
     val commonjs = SettingKey[String]("hbs-commonjs", "Exports CommonJS style, path to Handlebars module")
@@ -34,11 +40,10 @@ object SbtHbs extends AutoPlugin {
 
   val autoImport = Import
 
-  import autoImport.HbsKeys._
+  import SbtJsTask.autoImport.JsTaskKeys._
   import SbtWeb.autoImport._
   import WebKeys._
-  import SbtJsEngine.autoImport.JsEngineKeys._
-  import SbtJsTask.autoImport.JsTaskKeys._
+  import autoImport.HbsKeys._
 
   val hbsUnscopedSettings = Seq(
 
@@ -61,6 +66,34 @@ object SbtHbs extends AutoPlugin {
   )
 
   override def projectSettings = Seq(
+    remfile := {
+        println("Handlebars removing old generated files...")
+
+        val f = new File((WebKeys.webTarget.value / "hbs" / "main" / "templates.js").toURI)
+
+        f.delete()
+
+        f.getParentFile().mkdirs()
+
+        f.createNewFile()
+
+      if (amd.value) {
+        Files.write(Paths.get((WebKeys.webTarget.value / "hbs" / "main" / "templates.js").toURI), "define(['handlebars.runtime'], function(Handlebars) {\n  Handlebars = Handlebars[\"default\"];\n var template = Handlebars.template, templates = window.JST = window.JST || {};\n".getBytes(StandardCharsets.UTF_8))
+      }
+    },
+
+    finishfile := {
+      if (amd.value) {
+        println("Handlebars finishing generated file.")
+
+        Files.write(Paths.get((WebKeys.webTarget.value / "hbs" / "main" / "templates.js").toURI), "\nreturn templates;\n});".getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND)
+      }
+    },
+
+    finishfile <<= finishfile triggeredBy (HbsKeys.hbs),
+    finishfile in Assets <<= finishfile in Assets triggeredBy (HbsKeys.hbs in Assets),
+    finishfile in TestAssets <<= finishfile in TestAssets triggeredBy (HbsKeys.hbs in TestAssets),
+
     amd := false,
     commonjs := "",
     handlebarPath := "",
@@ -86,7 +119,10 @@ object SbtHbs extends AutoPlugin {
       )
   ) ++ SbtJsTask.addJsSourceFileTasks(hbs) ++ Seq(
     hbs in Assets := (hbs in Assets).dependsOn(nodeModules in Assets).value,
-    hbs in TestAssets := (hbs in TestAssets).dependsOn(nodeModules in TestAssets).value
+    hbs in TestAssets := (hbs in TestAssets).dependsOn(nodeModules in TestAssets).value,
+
+    hbs in Assets := (hbs in Assets).dependsOn(remfile in Assets).value,
+    hbs in TestAssets := (hbs in TestAssets).dependsOn(remfile in TestAssets).value
   )
 
 }
