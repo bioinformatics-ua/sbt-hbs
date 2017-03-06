@@ -6,7 +6,7 @@ organization := "com.bicou.sbt"
 
 name := "sbt-hbs"
 
-version := "1.0.7-SNAPSHOT"
+version := "1.0.7"
 
 scalaVersion := "2.10.4"
 
