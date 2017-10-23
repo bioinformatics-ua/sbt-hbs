@@ -67,7 +67,7 @@ object SbtHbs extends AutoPlugin {
 
   override def projectSettings = Seq(
     remfile := {
-        println("Handlebars removing old generated files...")
+        streams.value.log.info("Handlebars removing old generated files...")
 
         val f = new File((WebKeys.webTarget.value / "hbs" / "main" / "templates.js").toURI)
 
@@ -78,13 +78,13 @@ object SbtHbs extends AutoPlugin {
         f.createNewFile()
 
       if (amd.value) {
-        Files.write(Paths.get((WebKeys.webTarget.value / "hbs" / "main" / "templates.js").toURI), "define(['handlebars.runtime'], function(Handlebars) {\n  Handlebars = Handlebars[\"default\"];\n var template = Handlebars.template, templates = window.JST = window.JST || {};\n".getBytes(StandardCharsets.UTF_8))
+        Files.write(Paths.get((WebKeys.webTarget.value / "hbs" / "main" / "templates.js").toURI), "define(['handlebars.runtime'], function(Handlebars) {\n  Handlebars = Handlebars[\"default\"];\n var template = Handlebars.template, templates = window.JST = window.JST || {};\nHandlebars.partials = templates;\n".getBytes(StandardCharsets.UTF_8))
       }
     },
 
     finishfile := {
       if (amd.value) {
-        println("Handlebars finishing generated file.")
+        streams.value.log.info("Handlebars finishing generated file.")
 
         Files.write(Paths.get((WebKeys.webTarget.value / "hbs" / "main" / "templates.js").toURI), "\nreturn templates;\n});".getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND)
       }

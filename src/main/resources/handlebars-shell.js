@@ -116,7 +116,7 @@
                     //source.add('{};\n');
 
                     if (!options.amd) {
-                        source.add('var template = Handlebars.template, templates = window.JST = window.JST || {};\n');
+                        source.add('var template = Handlebars.template, templates = window.JST = window.JST || {};\nHandlebars.partials = templates;\n');
                     }
                 }
 
